@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Public profile information for students on the marketplace.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The unique Firebase Auth ID" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "phone": { "type": "string" },
+        "college": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "createdAt"]
+    },
+    "Listing": {
+      "title": "Marketplace Listing",
+      "description": "A second-hand item listed for sale by a student in Dharan.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string", "enum": ["Books", "Electronics", "Bikes", "Others"] },
+        "area": { "type": "string", "description": "Location area tag in Dharan" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "sellerId": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "sold", "deleted"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "price", "category", "sellerId", "status", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat Session",
+      "description": "A conversation between a buyer and a seller about a listing.",
+      "type": "object",
+      "properties": {
+        "listingId": { "type": "string" },
+        "listingTitle": { "type": "string" },
+        "listingPrice": { "type": "number" },
+        "listingImage": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" }, "description": "Buyer and Seller UIDs" },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["listingId", "participants", "updatedAt"]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "A single message in a chat subcollection.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "content", "createdAt"]
+    },
+    "Admin": {
+      "title": "Administrator",
+      "description": "Identifier for users with administrative privileges.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Stores student user profiles."
+    },
+    "admins": {
+      "schema": "Admin",
+      "description": "Whitelist of admin user IDs."
+    },
+    "listings": {
+      "schema": "Listing",
+      "description": "Stores all items listed for sale."
+    },
+    "chats": {
+      "schema": "Chat",
+      "description": "Stores chat sessions (metadata)."
+    },
+    "chats/{chatId}/messages": {
+      "schema": "Message",
+      "description": "Stores individual messages within a chat."
+    }
+  }
+}

@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function userId() { return request.auth.uid; }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // --- Validation Helpers ---
+
+    function isValidUser(data) {
+      return data.userId == userId()
+        && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100
+        && (data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 1000))
+        && (data.phone == null || (data.phone is string && data.phone.size() <= 20))
+        && (data.college == null || (data.college is string && data.college.size() <= 100))
+        && data.createdAt == request.time;
+    }
+
+    function isValidListing(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 2000
+        && data.price is number && data.price >= 0 && data.price <= 1000000
+        && data.category in ['Books', 'Electronics', 'Bikes', 'Others']
+        && (data.area == null || (data.area is string && data.area.size() <= 100))
+        && data.images is list && data.images.size() <= 5
+        && data.sellerId == userId()
+        && data.sellerName is string && data.sellerName.size() > 0
+        && data.status in ['active', 'sold', 'deleted']
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidChat(data) {
+      return data.listingId is string && isValidId(data.listingId)
+        && data.participants is list && data.participants.size() == 2
+        && userId() in data.participants
+        && data.updatedAt == request.time;
+    }
+
+    function isValidMessage(data) {
+      return data.senderId == userId()
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 1000
+        && data.createdAt == request.time;
+    }
+
+    // --- Match Rules ---
+    
+    match /admins/{uid} {
+      allow get: if isSignedIn() && uid == userId(); 
+      allow create: if isSignedIn() && uid == userId() && (
+        request.auth.token.email == 'samir.s4m112@gmail.com'
+      );
+      allow get, list, update, delete: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow get, write: if isSignedIn() && uid == userId();
+      allow get, list, update, delete: if isAdmin();
+    }
+
+    match /listings/{listingId} {
+      allow get: if true; // Public browse
+      allow list: if true; // Public browse, but usually filtered
+      allow create: if isSignedIn() && isValidListing(incoming());
+      allow update: if isSignedIn() && (existing().sellerId == userId() || isAdmin()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'price', 'category', 'area', 'images', 'status', 'updatedAt'])
+        && (isAdmin() || incoming().sellerId == existing().sellerId)
+        && incoming().createdAt == existing().createdAt
+      );
+      allow delete: if isSignedIn() && (existing().sellerId == userId() || isAdmin());
+    }
+
+    match /chats/{chatId} {
+      allow get: if isSignedIn() && userId() in existing().participants;
+      allow list: if isSignedIn() && userId() in existing().participants;
+      allow create: if isSignedIn() && isValidChat(incoming());
+      allow update: if isSignedIn() && userId() in existing().participants && (
+         incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt', 'updatedAt'])
+      );
+
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && userId() in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow list: if isSignedIn() && userId() in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow create: if isSignedIn() && userId() in get(/databases/$(database)/documents/chats/$(chatId)).data.participants && isValidMessage(incoming());
+      }
+    }
+  }
+}

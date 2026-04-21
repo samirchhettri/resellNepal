@@ -1,0 +1,6 @@
+{
+  "name": "resellNepal",
+  "description": "A hyperlocal second-hand marketplace exclusively for students in Dharan, Nepal. Buy and sell books, electronics, and more.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}

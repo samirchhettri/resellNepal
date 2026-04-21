@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', 'Helvetica Neue', ui-sans-serif, system-ui, sans-serif;
+  --color-accent: #2dd4bf;
+  --color-glass: rgba(255, 255, 255, 0.08);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+}
+
+@layer base {
+  body {
+    -webkit-tap-highlight-color: transparent;
+    @apply antialiased text-white;
+    background-color: #0f172a;
+    background-image: 
+      radial-gradient(circle at top left, #1e1b4b, transparent 50%),
+      radial-gradient(circle at bottom right, #115e59, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/10;
+  }
+  .glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-xl border-t border-white/10;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
